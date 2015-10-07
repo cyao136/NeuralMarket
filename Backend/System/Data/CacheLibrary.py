@@ -1,7 +1,7 @@
 '''
 Created on Oct 7, 2015
 
-@author: cyao
+@author: Chengyu Yao
 @summary: Library to cache data into pickle files
 '''
 
