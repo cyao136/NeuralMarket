@@ -18,16 +18,27 @@ class Connection(object):
             self.weight = weight
         else:
             self.weight = np.random.random_sample()
+        
+        self.deltaWeight = 0.0
 
 class Neuron(object):
     '''
     Neuron
     '''
-    def __init__(self, numOutput, layerIndex, outputValue=None, outputWeights=None):
+    def __init__(self, numOutput, layerIndex, outputValue=None, outputWeights=None, rate=None, momentum=None):
         self.outputValue = outputValue
         self.outputWeights = outputWeights
         self.__create_connections(numOutput)
         self.__index = layerIndex
+        self.gradient = None
+        if rate:
+            self.rate = rate
+        else:
+            self.rate = 0.2
+        if momentum:
+            self.momentum = momentum
+        else:
+            self.momentum = 0.5
 
     def __create_connections(self, numOutput):
         for i in range(numOutput):
@@ -46,6 +57,24 @@ class Neuron(object):
     
     def activation_derivative(self, value):
         return expit(value)
+    
+    def calculate_output_gradients(self, targetValue):
+        delta = targetValue - self.outputValue
+        self.gradient = delta * self.activation_derivative(self.outputValue)
+    
+    def calculate_hidden_gradients(self, nextLayer):
+        sumDOW = 0.0
+        for index in range(len(nextLayer)-1):
+            sumDOW += self.outputWeights[index].weight * nextLayer[index].gradient
+        self.gradient = self.activation_derivative(sumDOW * self.outputValue)
+        
+    def update_input_weights(self, prevLayer):
+        for index in range(len(prevLayer)):
+            neuron = prevLayer[index]
+            oldDeltaWeight = neuron.outputWeights[self.__index].deltaWeight
+            newDeltaWeight = self.rate * neuron.outputValue * self.gradient + self.momentum * oldDeltaWeight
+            neuron.outputWeights[self.__index].deltaWeight = newDeltaWeight
+            neuron.outputWeights[self.__index].weight += newDeltaWeight
 
 class ArtificialNeuralNetwork(object):
     '''
@@ -59,6 +88,9 @@ class ArtificialNeuralNetwork(object):
         self.inputLayerSize = layersSize[0]
         self.outputLayerSize = layersSize[-1]
         self.__layers = []
+        self.__errorValue = 0.0
+        self.__recentAverageError = 0.0
+        self.__recentErrorFactor = 0.0
 
         if layersSize:
             self.layersSize = layersSize
@@ -94,17 +126,46 @@ class ArtificialNeuralNetwork(object):
         Propagate target values back
         '''
         # Calculate overall net error
-
+        outputLayer = self.__layers[-1]
+        
+        for index in range(len(outputLayer) - 1):
+            delta = targetValues[index] - outputLayer[index].outputValue
+            self.__errorValue += np.square(delta)
+        self.__errorValue /= len(outputLayer) - 1
+        self.__errorValue = np.sqrt(self.__errorValue)
+        
+        self.__recentAverageError =\
+            (self.__recentAverageError * self.__recentErrorFactor + self.__errorValue)/(self.__recentErrorFactor + 1.0)
+        
         # Calculate output layer gradients
+        for index in range(len(outputLayer) - 1):
+            outputLayer[index].calculate_output_gradients(targetValues[index])
         
         # Calculate hidden layer gradients
+        hiddenLayerIndex = len(self.__layers) - 2
+        while hiddenLayerIndex > 0:
+            curLayer = hiddenLayers[hiddenLayerIndex]
+            nextLayer = hiddenLayers[hiddenLayerIndex + 1]
+            for neuron in curLayer:
+                neuron.calculate_hidden_gradients(nextLayer)
+            hiddenLayerIndex -= 1
         
         # Update connection weights
+        layerIndex = len(self.__layers) - 1
+        while layerIndex > 0:
+            curLayer = self.__layers[layerIndex]
+            prevLayer = self.__layers[layerIndex - 1]
+            for neuron in curLayer:
+                neuron.update_input_weights(prevLayer)
+            layerIndex -= 1
 
     def get_results(self, resultValues):
         '''
         Get the result values
         '''
+        resultValues = []
+        for neuron in self.__layers[-1]:
+            resultValues.append(neuron.outputValue)
 
     def __create_layer_with_neurons(self, numNeurons, numNeuronsNextLayer, biasNeuronValue=1.0):
         '''
@@ -119,34 +180,7 @@ class ArtificialNeuralNetwork(object):
 
         return newLayer
         
-#===============================================================================
-#     def __generate_weight_matrices(self):
-# 
-#         if self.hiddenLayerSize:
-#             # Input to first hidden layer's weights
-#             self.weights[0] = np.random.randn(self.inputLayerSize,
-#                                               self.hiddenLayerSize[0])
-# 
-#             # Create weight matrices for the hidden layers
-#             count = 0
-#             while count < len(self.hiddenLayerSize)-1:
-#                 newWeightMatrix = np.random.randn(self.hiddenLayerSize[count],
-#                                                   self.hiddenLayerSize[count+1])
-#                 self.weights.append(newWeightMatrix)
-#                 count += 1
-# 
-#             # Last hidden layer to Output layer weight matrix
-#             outputWeightMatrix = np.random.randn(self.hiddenLayerSize[count],
-#                                                  self.outputLayerSize)
-#             self.weights.append(outputWeightMatrix)
-# 
-#         else:
-#             # Input to output weights directly
-#             self.weights[0] = np.random.randn(self.inputLayerSize,
-#                                               self.outputLayerSize)
-#===============================================================================
-
-
+        
 if __name__ == "__main__":
     '''
     Main function
