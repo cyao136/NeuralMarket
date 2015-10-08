@@ -34,12 +34,12 @@ class Neuron(object):
             self.outputWeights[i] = Connection()
 
     def forward_prop(self, prevLayer):
-        sum = 0.0
+        sumOfValues = 0.0
         # Calculate the sum of the prevLayer's output values
         for neuron in prevLayer:
-            sum += neuron.outputValue * neuron.outputWeights[self.__index].weight
+            sumOfValues += neuron.outputValue * neuron.outputWeights[self.__index].weight
             
-        self.outputValue = self.activation_function(sum)
+        self.outputValue = self.activation_function(sumOfValues)
     
     def activation_function(self, value):
         return sigmoid(value)
@@ -76,20 +76,20 @@ class ArtificialNeuralNetwork(object):
             newLayer = self.__create_layer_with_neurons(self.layersSize[i], numNeuronsNextLayer)
             self.__layers[i] = newLayer
 
-    def forward_prop(self, input):
+    def forward_prop(self, inputValues):
         '''
         Propagate input values forward in the network
         '''
         # Set output values for input layer
-        for i in range(len(input)):
-            self.__layers[0][i].outputValue = input[i]
+        for i in range(len(inputValues)):
+            self.__layers[0][i].outputValue = inputValues[i]
 
         for layerNum in range(1, len(self.__layers)):
             prevLayer = self.__layers[layerNum-1]
             for neuronNum in range(len(self.__layers[layerNum])-1):
                 self.__layers[layerNum][neuronNum].forward_prop(prevLayer)
 
-    def back_prop(self, target):
+    def back_prop(self, targetValues):
         '''
         Propagate target values back
         '''
@@ -101,7 +101,7 @@ class ArtificialNeuralNetwork(object):
         
         # Update connection weights
 
-    def get_results(self, result):
+    def get_results(self, resultValues):
         '''
         Get the result values
         '''
