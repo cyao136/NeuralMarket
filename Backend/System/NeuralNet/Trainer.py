@@ -8,6 +8,7 @@ import sys
 DATA_PATH = "Test/XOR.csv"
 CYCLE = 10000
 
+
 def recordStats(count, thresholds, avgError, padding):
 
     if count > padding:
@@ -44,6 +45,7 @@ def userInput(network, inputValueNum):
         result = network.get_results()
         print ("Result: {}".format(result))
         print ("---------------\n")
+
 
 def train(topology, inputValues, targetValues):
     net = ArtificialNeuralNetwork(topology)
@@ -82,7 +84,8 @@ def train(topology, inputValues, targetValues):
             Reached 99.5% accuracy at: {3}
         
     """.format(thresholds[0], thresholds[1], thresholds[2], thresholds[3])))
-        
+
+
 if __name__ == "__main__":
     topology = []
     listInputValues = []
