@@ -2,6 +2,7 @@ import os
 import csv
 import textwrap
 from ArtificialNeuralNetwork import ArtificialNeuralNetwork
+import sys
 
 
 DATA_PATH = "Test/XOR.csv"
@@ -22,6 +23,27 @@ def recordStats(count, thresholds, avgError, padding):
         # Find when it reached 99.5%+ accuracy
         if avgError < 0.005 and not thresholds[3]:
                 thresholds[3] = count
+
+
+def userInput(network, inputValueNum):
+    # Let the user input their data
+    while True:
+        inputValues = []
+        for index in range(inputValueNum):
+            val = input("Input {}: (quit to quit the program)  ".format(index + 1))
+            if val == "quit":
+                sys.exit(0)
+            try:
+                inputValues.append(float(val))
+            except ValueError:
+                print ("Not a float value. Try Again!\n")
+                break
+        print ("Input: {}".format(inputValues))
+        network.forward_prop(inputValues)
+        # get result
+        result = network.get_results()
+        print ("Result: {}".format(result))
+        print ("---------------\n")
 
 def train(topology, inputValues, targetValues):
     net = ArtificialNeuralNetwork(topology)
@@ -46,6 +68,7 @@ def train(topology, inputValues, targetValues):
         # record the stats
         recordStats(count, thresholds, net.recentAverageError, padding)
         count += 1
+    userInput(net, topology[0])
     
     print (textwrap.dedent("""\
         Stats:
