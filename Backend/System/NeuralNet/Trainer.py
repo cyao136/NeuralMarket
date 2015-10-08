@@ -5,15 +5,31 @@ from ArtificialNeuralNetwork import ArtificialNeuralNetwork
 
 
 DATA_PATH = "Test/XOR.csv"
-CYCLE = 5000
+CYCLE = 10000
 
+def recordStats(count, thresholds, avgError, padding):
+
+    if count > padding:
+        # Find when it reached 95%+ accuracy
+        if avgError < 0.05 and not thresholds[0]:
+                thresholds[0] = count
+        # Find when it reached 98%+ accuracy
+        if avgError < 0.02 and not thresholds[1]:
+                thresholds[1] = count
+        # Find when it reached 99%+ accuracy
+        if avgError < 0.01 and not thresholds[2]:
+                thresholds[2] = count
+        # Find when it reached 99.5%+ accuracy
+        if avgError < 0.005 and not thresholds[3]:
+                thresholds[3] = count
 
 def train(topology, inputValues, targetValues):
     net = ArtificialNeuralNetwork(topology)
     count = 0
-    threshold = None
+    # list of stats recording when it reached 95%, 98%, 99%, and 99.5%
+    thresholds = [None, None, None, None]
     # When we expect the neural network to learn at earliest
-    fastSuccess = 500
+    padding = 500
     while count < CYCLE:
         index = count % len(listInputValues)
         # propagate forward
@@ -27,18 +43,22 @@ def train(topology, inputValues, targetValues):
         net.back_prop(listTargetValues[index])
         print ("Recent Average Error: {}".format(net.recentAverageError))
         print ("---------------\n")
-        # Find when it reached 95%+ accuracy
-        if net.recentAverageError < 0.05 and not threshold:
-            if count > fastSuccess:
-                threshold = count
+        # record the stats
+        recordStats(count, thresholds, net.recentAverageError, padding)
         count += 1
     
     print (textwrap.dedent("""\
         Stats:
             
-            Reached 95% accuracy at: {}
+            Reached 95% accuracy at: {0}
+            
+            Reached 98% accuracy at: {1}
+            
+            Reached 99% accuracy at: {2}
+            
+            Reached 99.5% accuracy at: {3}
         
-    """.format(threshold)))
+    """.format(thresholds[0], thresholds[1], thresholds[2], thresholds[3])))
         
 if __name__ == "__main__":
     topology = []

@@ -39,11 +39,11 @@ class Neuron(object):
         self.__index = layerIndex
         self.gradient = 0.0
         
-        self.rate = 0.15
+        self.rate = 0.06
         if rate:
             self.rate = rate
             
-        self.momentum = 0.5
+        self.momentum = 0.6
         if momentum:
             self.momentum = momentum
 
@@ -62,12 +62,14 @@ class Neuron(object):
     def activation_function(self, value):
         # sigmoid
         # return 1 / (1 + math.exp(-value))
+        # tan-sigmoid
         return math.tanh(value)
     
     def activation_derivative(self, value):
-        # gradient
-        # return math.exp(-value)/((1 + math.exp(value)) * (1 + math.exp(value)))
-        return 1.0 - value * value
+        # sigmoid
+        # return math.exp(value) / ((1 + math.exp(value)) * (1 + math.exp(value)))
+        # tan-sigmoid
+        return 1.0 - math.tanh(value) * math.tanh(value)
     
     def calculate_output_gradients(self, targetValue):
         delta = targetValue - self.outputValue
