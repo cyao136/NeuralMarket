@@ -6,6 +6,7 @@ Created on Oct 7, 2015
 '''
 
 import numpy as np
+import math
 from scipy.special import expit
 
 
@@ -14,10 +15,9 @@ class Connection(object):
     Connection
     '''
     def __init__(self, weight=None):
+        self.weight = float(np.random.random_sample())
         if weight:
             self.weight = weight
-        else:
-            self.weight = np.random.random_sample()
         
         self.deltaWeight = 0.0
 
@@ -26,23 +26,30 @@ class Neuron(object):
     Neuron
     '''
     def __init__(self, numOutput, layerIndex, outputValue=None, outputWeights=None, rate=None, momentum=None):
-        self.outputValue = outputValue
-        self.outputWeights = outputWeights
+        
+        self.outputValue = 0.0
+        if outputValue:
+            self.outputValue = outputValue
+            
+        self.outputWeights = []
+        if self.outputWeights:
+            self.outputWeights = outputWeights
+            
         self.__create_connections(numOutput)
         self.__index = layerIndex
-        self.gradient = None
+        self.gradient = 0.0
+        
+        self.rate = 0.15
         if rate:
             self.rate = rate
-        else:
-            self.rate = 0.2
+            
+        self.momentum = 0.5
         if momentum:
             self.momentum = momentum
-        else:
-            self.momentum = 0.5
 
     def __create_connections(self, numOutput):
         for i in range(numOutput):
-            self.outputWeights[i] = Connection()
+            self.outputWeights.append(Connection())
 
     def forward_prop(self, prevLayer):
         sumOfValues = 0.0
@@ -53,10 +60,14 @@ class Neuron(object):
         self.outputValue = self.activation_function(sumOfValues)
     
     def activation_function(self, value):
-        return sigmoid(value)
+        # sigmoid
+        # return 1 / (1 + math.exp(-value))
+        return math.tanh(value)
     
     def activation_derivative(self, value):
-        return expit(value)
+        # gradient
+        # return math.exp(-value)/((1 + math.exp(value)) * (1 + math.exp(value)))
+        return 1.0 - value * value
     
     def calculate_output_gradients(self, targetValue):
         delta = targetValue - self.outputValue
@@ -66,7 +77,7 @@ class Neuron(object):
         sumDOW = 0.0
         for index in range(len(nextLayer)-1):
             sumDOW += self.outputWeights[index].weight * nextLayer[index].gradient
-        self.gradient = self.activation_derivative(sumDOW * self.outputValue)
+        self.gradient = sumDOW * self.activation_derivative(self.outputValue)
         
     def update_input_weights(self, prevLayer):
         for index in range(len(prevLayer)):
@@ -81,32 +92,30 @@ class ArtificialNeuralNetwork(object):
     classdocs
     '''
 
-    def __init__(self, layersSize=None):
+    def __init__(self, topology=None):
         '''
         Constructor
         '''
-        self.inputLayerSize = layersSize[0]
-        self.outputLayerSize = layersSize[-1]
         self.__layers = []
         self.__errorValue = 0.0
-        self.__recentAverageError = 0.0
-        self.__recentErrorFactor = 0.0
+        self.recentAverageError = 0.0
+        self.recentErrorFactor = 100.0
 
-        if layersSize:
-            self.layersSize = layersSize
+        if topology:
+            self.topology = topology
         else:
-            self.layersSize = []
+            self.topology = []
 
         # Create weight matrices for each layer to the next with random values
         #self.weights = []
         #self.__generate_weight_matrices()
 
-        for i in range(len(self.layersSize)):
+        for i in range(len(self.topology)):
             numNeuronsNextLayer = 0
-            if i < len(self.layersSize):
-                numNeuronsNextLayer = self.layersSize[i+1]
-            newLayer = self.__create_layer_with_neurons(self.layersSize[i], numNeuronsNextLayer)
-            self.__layers[i] = newLayer
+            if i < len(self.topology) - 1:
+                numNeuronsNextLayer = self.topology[i + 1]
+            newLayer = self.__create_layer_with_neurons(self.topology[i], numNeuronsNextLayer)
+            self.__layers.append(newLayer)
 
     def forward_prop(self, inputValues):
         '''
@@ -117,8 +126,8 @@ class ArtificialNeuralNetwork(object):
             self.__layers[0][i].outputValue = inputValues[i]
 
         for layerNum in range(1, len(self.__layers)):
-            prevLayer = self.__layers[layerNum-1]
-            for neuronNum in range(len(self.__layers[layerNum])-1):
+            prevLayer = self.__layers[layerNum - 1]
+            for neuronNum in range(len(self.__layers[layerNum]) - 1):
                 self.__layers[layerNum][neuronNum].forward_prop(prevLayer)
 
     def back_prop(self, targetValues):
@@ -126,16 +135,17 @@ class ArtificialNeuralNetwork(object):
         Propagate target values back
         '''
         # Calculate overall net error
+        self.__errorValue = 0.0
         outputLayer = self.__layers[-1]
         
         for index in range(len(outputLayer) - 1):
             delta = targetValues[index] - outputLayer[index].outputValue
-            self.__errorValue += np.square(delta)
+            self.__errorValue += delta * delta
         self.__errorValue /= len(outputLayer) - 1
-        self.__errorValue = np.sqrt(self.__errorValue)
+        self.__errorValue = math.sqrt(self.__errorValue)
         
-        self.__recentAverageError =\
-            (self.__recentAverageError * self.__recentErrorFactor + self.__errorValue)/(self.__recentErrorFactor + 1.0)
+        self.recentAverageError =\
+            (self.recentAverageError * self.recentErrorFactor + self.__errorValue)/(self.recentErrorFactor + 1.0)
         
         # Calculate output layer gradients
         for index in range(len(outputLayer) - 1):
@@ -144,10 +154,10 @@ class ArtificialNeuralNetwork(object):
         # Calculate hidden layer gradients
         hiddenLayerIndex = len(self.__layers) - 2
         while hiddenLayerIndex > 0:
-            curLayer = hiddenLayers[hiddenLayerIndex]
-            nextLayer = hiddenLayers[hiddenLayerIndex + 1]
-            for neuron in curLayer:
-                neuron.calculate_hidden_gradients(nextLayer)
+            curLayer = self.__layers[hiddenLayerIndex]
+            nextLayer = self.__layers[hiddenLayerIndex + 1]
+            for index in range(len(curLayer)):
+                curLayer[index].calculate_hidden_gradients(nextLayer)
             hiddenLayerIndex -= 1
         
         # Update connection weights
@@ -155,18 +165,19 @@ class ArtificialNeuralNetwork(object):
         while layerIndex > 0:
             curLayer = self.__layers[layerIndex]
             prevLayer = self.__layers[layerIndex - 1]
-            for neuron in curLayer:
-                neuron.update_input_weights(prevLayer)
+            for index in range(len(curLayer) - 1):
+                curLayer[index].update_input_weights(prevLayer)
             layerIndex -= 1
 
-    def get_results(self, resultValues):
+    def get_results(self):
         '''
         Get the result values
         '''
         resultValues = []
-        for neuron in self.__layers[-1]:
+        for neuron in self.__layers[-1][:-1]:
             resultValues.append(neuron.outputValue)
-
+        return resultValues
+        
     def __create_layer_with_neurons(self, numNeurons, numNeuronsNextLayer, biasNeuronValue=1.0):
         '''
         Create a layer with numNeurons of Neurons
@@ -174,17 +185,8 @@ class ArtificialNeuralNetwork(object):
         newLayer = []
         # Add the neurons
         for index in range(numNeurons):
-            newLayer[index] = Neuron(numNeuronsNextLayer, index)
+            newLayer.append(Neuron(numNeuronsNextLayer, index))
         # Add the bias neuron
-        newLayer.append(Neuron(numNeuronsNextLayer, outputValue=1.0))
+        newLayer.append(Neuron(numNeuronsNextLayer, index+1, outputValue=1.0))
 
         return newLayer
-        
-        
-if __name__ == "__main__":
-    '''
-    Main function
-    '''
-
-def sigmoid(self, x):
-    return 1/(1+np.exp(-x))
