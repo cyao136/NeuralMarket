@@ -1,7 +1,7 @@
 import os
 import csv
 import textwrap
-from ArtificialNeuralNetwork import ArtificialNeuralNetwork
+from Backend.System.NeuralNet.ArtificialNeuralNetwork import ArtificialNeuralNetwork
 import sys
 
 
