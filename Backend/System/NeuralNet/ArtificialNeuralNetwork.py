@@ -5,9 +5,8 @@ Created on Oct 7, 2015
 @summary: The learning class which incorporates the Artificial Neural Network model
 '''
 
-import numpy as np
 import math
-from scipy.special import expit
+import random
 
 
 class Connection(object):
@@ -15,7 +14,7 @@ class Connection(object):
     Connection
     '''
     def __init__(self, weight=None):
-        self.weight = float(np.random.random_sample())
+        self.weight = float(random.uniform(0,1))
         if weight:
             self.weight = weight
         
