@@ -70,7 +70,6 @@ def train(topology, inputValues, targetValues):
         # record the stats
         recordStats(count, thresholds, net.recentAverageError, padding)
         count += 1
-    userInput(net, topology[0])
     
     print (textwrap.dedent("""\
         Stats:
@@ -84,6 +83,8 @@ def train(topology, inputValues, targetValues):
             Reached 99.5% accuracy at: {3}
         
     """.format(thresholds[0], thresholds[1], thresholds[2], thresholds[3])))
+    
+    userInput(net, topology[0])
 
 
 if __name__ == "__main__":
