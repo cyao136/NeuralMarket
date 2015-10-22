@@ -5,6 +5,8 @@ Created on Oct 7, 2015
 @summary: Client to acquire the data from Yahoo Finance via API calls
 '''
 
+from ClientConfig import YahooFinanceClientConfig
+
 # Should inherite from an API client
 class YahooFinanceClient(object):
     '''
@@ -12,8 +14,10 @@ class YahooFinanceClient(object):
     '''
 
 
-    def __init__(self, params):
+    def __init__(self):
         '''
         Constructor
         '''
-        
+    
+    def get_data(self):
+        return None

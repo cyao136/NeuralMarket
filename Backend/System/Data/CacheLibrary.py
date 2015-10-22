@@ -5,8 +5,8 @@ Created on Oct 7, 2015
 @summary: Library to cache data into pickle files
 '''
 
-def load_data():
+def load_data(cacheToLoad=None):
     return None
 
-def cache_data():
+def cache_data(dataToCache):
     return False
